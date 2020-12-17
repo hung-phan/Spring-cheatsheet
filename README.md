@@ -26,9 +26,6 @@ class YourErrorResponse {
 ```
 
 ```java
-import lombok.Value;
-
-@Value
 class YourException extends Exception {
     public YourException(String message, Throwable cause) {
         super(message, cause);
@@ -61,11 +58,11 @@ public class RestExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<YourErrorResponse> handleException(YourException exc) {
-        YourErrorResponse error = new YourErrorResponse();
-
-        error.setStatus(HttpStatus.BAD_REQUEST.value());
-        error.setMessage(exc.getMessage());
-        error.setTimestamp(System.currentTimeMillis());
+        YourErrorResponse error = new YourErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                exc.getMessage(),
+                System.currentTimeMillis()
+        );
 
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
@@ -98,11 +95,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 public class RestExceptionHandler {
     @ExceptionHandler
     public ResponseEntity<YourErrorResponse> handleException(Exception exc) {
-        YourErrorResponse error = new YourErrorResponse();
-
-        error.setStatus(HttpStatus.BAD_REQUEST.value());
-        error.setMessage(exc.getMessage());
-        error.setTimestamp(System.currentTimeMillis());
+        YourErrorResponse error = new YourErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                exc.getMessage(),
+                System.currentTimeMillis()
+        );
 
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }

@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello world</title>
+    <link rel="stylesheet" th:href="@{/css/hello_world.css}" />
+</head>
+<body>
+<p th:text="'Time on the server is ' + ${theDate}"/>
+</body>
+</html>

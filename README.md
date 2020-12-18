@@ -957,7 +957,7 @@ import javax.persistence.*;
 @Entity
 @Table(name = "course")
 public class Course {
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH})
     @JoinTable(
             name = "course_student",
             joinColumns = @JoinColumn(name = "course_id"),
@@ -973,7 +973,7 @@ import javax.persistence.*;
 @Entity
 @Table(name = "student")
 public class Student {
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH})
     @JoinTable(
             name = "course_student",
             joinColumns = @JoinColumn(name = "student_id"),

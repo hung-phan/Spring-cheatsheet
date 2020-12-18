@@ -5,7 +5,7 @@ sources.
 
 ## Spring structure opinion
 
-This is the example of common 
+This is the example of common
 ![common-application-structure](/imgs/common-application-structure.png)
 
 ## Configuration
@@ -134,9 +134,138 @@ spring.datasource.password=pass
 
 ## IOC and Dependency injection
 
+### @Component
+
+When specifying class with `@Componenent`, you will create a bean (java object which its lifecycle is being managed by
+spring).
+
+```java
+import org.springframework.stereotype.Component;
+
+@Component
+public class TennisCoach {
+}
+```
+
+Then you can use it as follow:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+
+public class MyLittlePony {
+    private final TennisCoach tennisCoach;
+
+    @Autowired
+    public MyLittlePony(TennisCoach tennisCoach) {
+        this.tennisCoach = tennisCoach;
+    }
+}
+```
+
+To define bean name, you can update `@Component` to do this
+
+```java
+
+@Component("myTennisCoach")
+public class TennisCoach implements Coach {
+}
+```
+
+Then you can refer to this using spring context
+
+```java
+public class Testing {
+    public void myTesting() {
+        Coach coach = context.getBean("myTennisCoach", Coach.class);
+    }
+}
+```
+
+### @Autowired
+
+There are several injection types:
+
+- Constructor injection (Most favour way of doing DI)
+- Setter injection
+- Field injection (by using reflection at runtime)
+
+When there are multiple implementation of an interface, you must use `@Qualifier` for spring to know which
+implementation you want it to use. For example:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+
+public class Testing {
+    private final Coach coach;
+
+    @Autowired
+    public Testing(@Qualifier("myTennisCoach") Coach coach) {
+        this.coach = coach;
+    }
+}
+```
+
+### @Scope
+
+- singleton: This scopes the bean definition to a single instance per Spring IoC container (default).
+- prototype: This scopes a single bean definition to have any number of object instances.
+- request: This scopes a bean definition to an HTTP request. Only valid in the context of a web-aware Spring
+  ApplicationContext.
+- session: This scopes a bean definition to an HTTP session. Only valid in the context of a web-aware Spring
+  ApplicationContext.
+- global-session: This scopes a bean definition to a global HTTP session. Only valid in the context of a web-aware
+  Spring ApplicationContext.
+
+For example
+
+```java
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+@Component
+@Scope("prototye")
+public class TennisCoach implements Coach {
+}
+```
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+
+public class Testing {
+    public void myTesting() {
+        Coach coach1 = context.getBean("tennisCoach", Coach.class);
+        Coach coach2 = context.getBean("tennisCoach", Coach.class);
+
+        assert coach1 == coach2;
+    }
+}
+```
+
+### @PostConstruct and @PreDestroy
+
+```java
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+@Component
+public class TennisCoach implements Coach {
+    @PostConstruct
+    public void doSthAfterBeanCreation() {
+    }
+
+    @PreDestroy
+    public void doSthToCleanup() {
+    }
+}
+```
+
 ## Spring MVC
 
-### Entity example
+### Entity
 
 ```java
 
@@ -208,7 +337,7 @@ public class Customer {
 }
 ```
 
-### DAO example
+### DAO
 
 ```java
 public interface CustomerDAO {
@@ -282,7 +411,7 @@ public class CustomerDAOImpl implements CustomerDAO {
 
 ```
 
-### Service example
+### Service
 
 ```java
 public interface CustomerService {
@@ -337,7 +466,7 @@ public class CustomerServiceImpl implements CustomerService {
 }
 ```
 
-### Service
+### Controller
 
 ```java
 
@@ -491,6 +620,86 @@ public class RestExceptionHandler {
 
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
+}
+```
+
+### Getting data from client
+
+1. For query params
+
+```java
+import org.springframework.ui.Model;
+
+import javax.servlet.http.HttpServletRequest;
+
+public class Testing {
+    public String getDataFromClient(HttpServletRequest req, Model model) {
+        System.out.println(req.getParameter("myQueryParam"));
+    }
+}
+```
+
+or
+
+```java
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import javax.servlet.http.HttpServletRequest;
+
+public class Testing {
+    public String getDataFromClient(@RequestParam("myQueryParam") String myQueryParam, Model model) {
+        System.out.println(myQueryParam);
+    }
+}
+```
+
+2. For model param
+
+```java
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+public class Testing {
+    public String processFormData(@ModelAttribute("employee") Employee employee) {
+    }
+}
+```
+
+### Data validation
+
+Some annotation examples:
+
+![data-validation](/imgs/data-validation.png)
+
+Usage:
+
+```java
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
+public class Customer {
+    @NotNull(message = "is required")
+    @Size(min = 1)
+    private String name;
+}
+```
+
+Perform validation check
+
+```java
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.validation.Valid;
+
+public class Testing {
+  public String processFormData(@Valid @ModelAttribute("customer") Customer customer, BindingResult bindingResult) {
+      if (bindingResult.hasErrors()) {
+          return "customer-form"; // you can handle the error in the jsp page
+      }
+      
+      return "customer-confirmation";
+  }
 }
 ```
 

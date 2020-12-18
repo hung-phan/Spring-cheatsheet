@@ -1,13 +1,16 @@
-## Spring boot 5.x cheatsheet
+# Spring boot 5.x cheatsheet
 
 This is a recap from [Udemy course](udemy.com/course/spring-hibernate-tutorial) and combination of many learning
 sources.
 
-### Spring structure opinion
+## Spring structure opinion
 
-### Configuration
+This is the example of common 
+![common-application-structure](/imgs/common-application-structure.png)
 
-#### @SpringBootApplication
+## Configuration
+
+### @SpringBootApplication
 
 @SpringBootApplication is a convenience annotation that adds all of the following:
 
@@ -22,7 +25,7 @@ letting it find the controllers.
 
 Reference from [resource](https://spring.io/guides/gs/spring-boot/)
 
-#### Scan more packages
+### Scan more packages
 
 ```java
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -37,7 +40,7 @@ class MyLittlePony {
 }
 ```
 
-#### Load additional properties file from resource
+### Load additional properties file from resource
 
 ```java
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -76,7 +79,7 @@ public class SpringCheatsheetApplication {
 }
 ```
 
-#### Use property value
+### Use property value
 
 From application.properties for example
 
@@ -98,7 +101,7 @@ public class MyLittlePony {
 }
 ```
 
-#### Some core configuration
+### Some core configurations
 
 ```properties
 # log levels severity mapping
@@ -129,56 +132,11 @@ spring.datasource.username=user
 spring.datasource.password=pass
 ```
 
-Use with spring security config
+## IOC and Dependency injection
 
-```java
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+## Spring MVC
 
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        // add our users for in memory authentication
-        UserBuilder users = User.withDefaultPasswordEncoder();
-
-        auth.inMemoryAuthentication()
-                .withUser(users.username("john").password("test123").roles("EMPLOYEE"))
-                .withUser(users.username("mary").password("test123").roles("EMPLOYEE", "MANAGER"))
-                .withUser(users.username("susan").password("test123").roles("EMPLOYEE", "ADMIN"));
-
-        // OR
-
-        // use jdbc authentication
-//        auth.jdbcAuthentication().dataSource(securityDataSource);
-    }
-
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-
-        http.authorizeRequests()
-                .antMatchers("/").hasRole("EMPLOYEE")
-                .antMatchers("/leaders/**").hasRole("MANAGER")
-                .antMatchers("/systems/**").hasRole("ADMIN")
-                .and()
-                .formLogin()
-                .loginPage("/showMyLoginPage")
-                .loginProcessingUrl("/authenticateTheUser")
-                .permitAll()
-                .and()
-                .logout().permitAll()
-                .and()
-                .exceptionHandling().accessDeniedPage("/access-denied");
-
-    }
-
-}
-```
-
-### IOC and Dependency injection
-
-### Spring MVC
-
-#### Entity example
+### Entity example
 
 ```java
 
@@ -244,13 +202,13 @@ public class Customer {
 
     @Override
     public String toString() {
-        return "Customer [id=%d, firstName=%s, lastName=%s, email=%s]".formatted(id, firstName, lastName, email);
+        return String.format("Customer [id=%d, firstName=%s, lastName=%s, email=%s]", id, firstName, lastName, email);
     }
 
 }
 ```
 
-#### DAO example
+### DAO example
 
 ```java
 public interface CustomerDAO {
@@ -324,7 +282,7 @@ public class CustomerDAOImpl implements CustomerDAO {
 
 ```
 
-#### Service example
+### Service example
 
 ```java
 public interface CustomerService {
@@ -379,7 +337,7 @@ public class CustomerServiceImpl implements CustomerService {
 }
 ```
 
-#### Service
+### Service
 
 ```java
 
@@ -442,7 +400,7 @@ public class CustomerRestController {
 }
 ```
 
-#### Handle custom exception inside class
+### Handle custom exception inside class
 
 ```java
 import lombok.Value;
@@ -499,7 +457,7 @@ public class RestExceptionHandler {
 }
 ```
 
-#### Handle exception globally
+### Handle exception globally
 
 ```java
 import lombok.Value;
@@ -534,4 +492,115 @@ public class RestExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 }
+```
+
+## Spring security
+
+```java
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        // add our users for in memory authentication
+        UserBuilder users = User.withDefaultPasswordEncoder();
+
+        auth.inMemoryAuthentication()
+                .withUser(users.username("john").password("test123").roles("EMPLOYEE"))
+                .withUser(users.username("mary").password("test123").roles("EMPLOYEE", "MANAGER"))
+                .withUser(users.username("susan").password("test123").roles("EMPLOYEE", "ADMIN"));
+
+        // OR
+
+        // use jdbc authentication
+//        auth.jdbcAuthentication().dataSource(securityDataSource);
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+
+        http.authorizeRequests()
+                .antMatchers("/").hasRole("EMPLOYEE")
+                .antMatchers("/leaders/**").hasRole("MANAGER")
+                .antMatchers("/systems/**").hasRole("ADMIN")
+                .and()
+                .formLogin()
+                .loginPage("/showMyLoginPage")
+                .loginProcessingUrl("/authenticateTheUser")
+                .permitAll()
+                .and()
+                .logout().permitAll()
+                .and()
+                .exceptionHandling().accessDeniedPage("/access-denied");
+
+    }
+
+}
+```
+
+## Spring data jpa
+
+To reduce the repetition in creating DAOs, use spring-data-jpa as follow:
+
+```java
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface CustomerRepository extends JpaRepository<Customer, Integer> {
+}
+```
+
+`JpaRepository` will accept EntityClass and primary key. After that, you will get all of these methods for free.
+
+```java
+public class CustomerService {
+    private final CustomerRepository customerRepository;
+
+    public void testReposistory() {
+        customerReposistory.findAll();
+        customerReposistory.findById();
+        customerReposistory.save();
+        customerReposistory.deleteBy();
+        // etc
+    }
+}
+```
+
+When using JpaRepository implementation, you can remove `@Transactional` annotation from service class because it is
+taken care of inside data jpa package.
+
+## Spring data rest
+
+To reduce boilerplate for REST endpoints, you can use spring-data-rest. There are some prerequisites before you can
+fully utilise the feature.
+
+```md
+1. Your entity: Employee
+2. JpaRepository: EmployeeRepository extends JpaRepository
+3. Dependency: spring-boot-starter-data-rest
+```
+
+![spring-data-reset](/imgs/spring-data-rest.png)
+
+Spring data rest are also HATEOAS compliant.
+
+### Some configurations
+
+```java
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+
+/**
+ * In case your want to specify the endpoint prefix
+ */
+@RepositoryRestResource(path = "members")
+public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
+}
+```
+
+For application.properties
+
+```properties
+spring.data.rest.base-path=/my-funky-endpoints
+spring.data.rest.default-page-size=30
 ```

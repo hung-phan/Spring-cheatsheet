@@ -181,6 +181,32 @@ public class Testing {
 }
 ```
 
+To define custom bean, that is useful for external services you can define it as follow
+
+```java
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.PropertySources;
+
+@SpringBootApplication
+@PropertySource({
+        "classpath:application.properties",
+        "classpath:persistent-db.properties"
+})
+public class SpringCheatsheetApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(SpringCheatsheetApplication.class, args);
+    }
+
+    @Bean
+    @Scope("prototype") // just an example
+    public ExternalService createExternalServiceConnection() {
+        return new MyAwesomeExternalService();
+    }
+}
+```
+
 ### @Autowired
 
 There are several injection types:
@@ -693,13 +719,13 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import javax.validation.Valid;
 
 public class Testing {
-  public String processFormData(@Valid @ModelAttribute("customer") Customer customer, BindingResult bindingResult) {
-      if (bindingResult.hasErrors()) {
-          return "customer-form"; // you can handle the error in the jsp page
-      }
-      
-      return "customer-confirmation";
-  }
+    public String processFormData(@Valid @ModelAttribute("customer") Customer customer, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return "customer-form"; // you can handle the error in the jsp page
+        }
+
+        return "customer-confirmation";
+    }
 }
 ```
 
@@ -745,6 +771,215 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     }
 
+}
+```
+
+## Entity life cycle
+
+![entity-lifecycle](/imgs/entity-lifecycle.png)
+![entity-lifecycle-session](/imgs/entity-lifecycle-session.png)
+
+## Cascade types
+
+![cascade-type](/imgs/cascade-type.png)
+
+## Relationship mapping
+
+### @OneToOne
+
+![instructor](/imgs/instructor.png)
+
+```java
+import javax.persistence.*;
+
+@Entity
+@Table(name = "instructor")
+public class Instructor {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private int id;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "email")
+    private String email;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "instructor_detail_id")
+    private InstructorDetail instructorDetail;
+
+    // or you can specify the cascade type as follow
+
+    /**
+     * @OneToOne(cascade = {
+     *   CascadeType.DETACH,
+     *   CascadeType.MERGE,
+     *   CascadeType.PERSIST,
+     *   CascadeType.REFRESH
+     * })
+     */
+
+    // constructors, getters, setters
+}
+```
+
+![instructor-detail](/imgs/instructor-detail.png)
+
+```java
+import javax.persistence.*;
+
+@Entity
+@Table(name = "instructor_detail")
+public class InstructorDetail {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private int id;
+
+    @Column(name = "youtube_channel")
+    private String youtubeChannel;
+
+    @Column(name = "hobby")
+    private String hobby;
+
+    // in case, you need bi-directional binding. You can declare it as follow
+    @OneToOne(mappedBy = "instructorDetail", cascade = CascadeType.ALL)
+    private Instructor instructor;
+    // instructorDetail refer to the property in Instructor class
+
+    // constructors, getters, setters
+}
+```
+
+![instructor-instructor-detail-relationship](/imgs/instructor-instructor-detail-relationship.png)
+
+In main application, you can do sth like this
+
+```java
+public class Testing {
+    public void doSth() {
+        Instructor instructor = new Instructor();
+        InstructorDetail instructorDetail = new InstructorDetail();
+
+        instructor.setInstructorDetail(instructorDetail);
+
+        // it will also store instructor detail
+        instructorService.save(instructor);
+    }
+}
+```
+
+To break the bi-directional link when delete, you can change the cascade type in InstructorDetail class to not use
+`CascadeType.REMOVE`.
+
+### @OneToMany
+
+![course-instructor-relationship](/imgs/course-instructor-relationship.png)
+
+```java
+import javax.persistence.*;
+
+@Entity
+@Table(name = "course")
+public class Course {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private int id;
+
+    @Column(name = "title")
+    private String title;
+
+    @ManyToMany
+    @JoinColumn(name = "instructor_id")
+    private Instructor instructor;
+
+    // constructors, getters, setters
+}
+```
+
+```java
+import javax.persistence.*;
+import java.util.ArrayList;
+
+@Entity
+@Table(name = "instructor")
+public class Instructor {
+    // prevent cascading delete when delete instructor
+    @OneToMany(mappedBy = "instructor", cascade = {CascadeType.PERSIST, CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH})
+    private List<Course> courses;
+
+    // some helper methods
+    public void addCourse(Course course) {
+        if (courses == null) {
+            courses = new ArrayList<>();
+        }
+
+        course.setInstructor(this);
+
+        courses.add(course);
+    }
+}
+```
+
+#### Eager vs lazy
+
+The default setting is LAZY when you fetch for its dependencies. To adjust the setting, update fetch attribute on the
+relationship.
+
+```java
+import javax.persistence.*;
+
+@Entity
+@Table(name = "instructor")
+public class Instructor {
+    // prevent cascading delete when delete instructor
+    @OneToMany(
+            fetch = FetchType.EAGER, // vs FetchType.LAZY
+            mappedBy = "instructor",
+            cascade = {CascadeType.PERSIST, CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH})
+    private List<Course> courses;
+}
+```
+
+### @ManyToMany
+
+![course-student](/imgs/course-student.png)
+
+```java
+import javax.persistence.*;
+
+@Entity
+@Table(name = "course")
+public class Course {
+    @ManyToMany
+    @JoinTable(
+            name = "course_student",
+            joinColumns = @JoinColumn(name = "course_id"),
+            inverseJoinColumns = @JoinColumn(name = "student_id")
+    )
+    private List<Student> students;
+}
+```
+
+```java
+import javax.persistence.*;
+
+@Entity
+@Table(name = "student")
+public class Student {
+    @ManyToMany
+    @JoinTable(
+            name = "course_student",
+            joinColumns = @JoinColumn(name = "student_id"),
+            inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    private List<Course> courses;
 }
 ```
 

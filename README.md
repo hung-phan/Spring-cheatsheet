@@ -1400,3 +1400,28 @@ For application.properties
 spring.data.rest.base-path=/my-funky-endpoints
 spring.data.rest.default-page-size=30
 ```
+
+## WAR Deployment
+
+For deploying the web app with other services running in the same Tomcat or Jetty server, you must modify the
+application as below
+
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+
+@SpringBootApplication
+public class DeploydemoApplication extends SpringBootServletInitializer {
+
+    @Override
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+        return application.sources(DeploydemoApplication.class);
+    }
+
+    public static void main(String[] args) {
+        SpringApplication.run(DeploydemoApplication.class, args);
+    }
+}
+```

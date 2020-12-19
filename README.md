@@ -5,8 +5,55 @@ sources.
 
 ## Spring structure opinion
 
-This is the example of common
+This is the example of common structure for spring application
+
 ![common-application-structure](/imgs/common-application-structure.png)
+
+It usually follows Domain Driven Design structure where you would have sth like this
+
+```md
++---src
+|   +---main
+|       +---java
+|           +---com.your_company.project_name
+|               +---application
+|                   +---customer
+|                       \---CustomerController
+|                   +---product
+|                       \---ProductController
+|                   +---customer_product
+|                       \---CustomerProductController
+|                       \---CustomerProductService # will usually use to aggregate logic from many different DAOs
+|               +---domain
+|                   +---customer
+|                       \---Customer
+|                       \---CustomerValidator
+|                   +---product
+|                       \---Product
+|               +---infrastructure
+|                   +---dao
+|                       \---CustomerDAO
+|                       \---ProductDAO
+|                   +---repository
+|                       \---CustomerProductRepository
+|                   +---configuration
+|                       \---DatasourceConfig
+|                       \---SecurityConfig
+|                       \---WebServerConfig
+```
+
+### [DAO vs Repository](https://stackoverflow.com/questions/8550124/what-is-the-difference-between-dao-and-repository-patterns)
+`DAO` is an abstraction of data persistence.
+`Repository` is an abstraction of a collection of objects.
+
+`DAO` would be considered closer to the database, often table-centric.
+`Repository` would be considered closer to the Domain, dealing only in Aggregate Roots.
+
+`Repository` could be implemented using `DAO`'s, but you wouldn't do the opposite.
+
+Also, a `Repository` is generally a narrower interface. It should be simply a collection of objects, with a Get(id), Find(ISpecification), Add(Entity).
+
+A method like Update is appropriate on a `DAO`, but not a `Repository` - when using a Repository, changes to entities would usually be tracked by separate UnitOfWork.
 
 ## Configuration
 
@@ -434,7 +481,6 @@ public class CustomerDAOImpl implements CustomerDAO {
         theQuery.executeUpdate();
     }
 }
-
 ```
 
 ### Service

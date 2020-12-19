@@ -11,13 +11,35 @@ This is the example of common structure for spring application
 
 It usually follows Domain Driven Design structure where you would have sth like this
 
-```md
-+---src | +---main | +---java | +---com.your_company.project_name | +---application | +---customer |
-\---CustomerController | +---product | \---ProductController | +---customer_product | \---CustomerProductController |
-\---CustomerProductService # will usually use to aggregate logic from many different DAOs | +---domain | +---customer |
-\---Customer | \---CustomerValidator | +---product | \---Product | +---infrastructure | +---dao | \---CustomerDAO |
-\---ProductDAO | +---repository | \---CustomerProductRepository | +---configuration | \---DatasourceConfig |
-\---SecurityConfig | \---WebServerConfig
+```
++---src
+    +---main
+        +---java
+            +---com.your_company.project_name
+                +---application
+                    +---customer
+                        \---CustomerController
+                    +---product
+                        \---ProductController
+                    +---customer_product
+                        \---CustomerProductController
+                        \---CustomerProductService # will usually use to aggregate logic from many different DAOs
+                +---domain
+                    +---customer
+                        \---Customer
+                        \---CustomerValidator
+                    +---product
+                        \---Product
+                +---infrastructure
+                    +---dao
+                        \---CustomerDAO
+                        \---ProductDAO
+                    +---repository
+                        \---CustomerProductRepository
+                    +---configuration
+                        \---DatasourceConfig
+                        \---SecurityConfig
+                        \---WebServerConfig
 ```
 
 ### [DAO vs Repository](https://stackoverflow.com/questions/8550124/what-is-the-difference-between-dao-and-repository-patterns)

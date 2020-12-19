@@ -778,6 +778,101 @@ public class Testing {
 }
 ```
 
+### Custom validation
+
+```java
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import javax.validation.Constraint;
+import javax.validation.Payload;
+
+@Constraint(validatedBy = CourseCodeConstraintValidator.class)
+@Target({ElementType.METHOD, ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface CourseCode {
+
+    // define default course code
+    public String value() default "LUV";
+
+    // define default error message
+    public String message() default "must start with LUV";
+
+    // define default groups
+    public Class<?>[] groups() default {};
+
+    // define default payloads
+    public Class<? extends Payload>[] payload() default {};
+}
+```
+
+```java
+import javax.validation.ConstraintValidator;
+import javax.validation.ConstraintValidatorContext;
+
+public class CourseCodeConstraintValidator
+        implements ConstraintValidator<CourseCode, String> {
+
+    private String coursePrefix;
+
+    @Override
+    public void initialize(CourseCode theCourseCode) {
+        coursePrefix = theCourseCode.value();
+    }
+
+    @Override
+    public boolean isValid(String theCode,
+                           ConstraintValidatorContext theConstraintValidatorContext) {
+
+        boolean result;
+
+        if (theCode != null) {
+            result = theCode.startsWith(coursePrefix);
+        } else {
+            result = true;
+        }
+
+        return result;
+    }
+}
+```
+
+```java
+public class Customer {
+    @CourseCode(value = "TOP", message = "Must start with TOP")
+    private String courseCode;
+    // ...
+}
+```
+
+### @InitBinder
+
+To process any request before it hits that controller
+
+```java
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Controller
+@RequestMapping("/customer")
+public class CustomerController {
+    // add an initbinder ... to convert trim input strings
+    // remove leading and trailing whitespace
+    // resolve issue for our validation
+
+    @InitBinder
+    public void initBinder(WebDataBinder dataBinder) {
+        StringTrimmerEditor stringTrimmerEditor = new StringTrimmerEditor(true);
+
+        dataBinder.registerCustomEditor(String.class, stringTrimmerEditor);
+    }
+}
+```
+
 ## AOP
 
 ![aop](/imgs/aop.png)

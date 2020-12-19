@@ -12,37 +12,16 @@ This is the example of common structure for spring application
 It usually follows Domain Driven Design structure where you would have sth like this
 
 ```md
-+---src
-|   +---main
-|       +---java
-|           +---com.your_company.project_name
-|               +---application
-|                   +---customer
-|                       \---CustomerController
-|                   +---product
-|                       \---ProductController
-|                   +---customer_product
-|                       \---CustomerProductController
-|                       \---CustomerProductService # will usually use to aggregate logic from many different DAOs
-|               +---domain
-|                   +---customer
-|                       \---Customer
-|                       \---CustomerValidator
-|                   +---product
-|                       \---Product
-|               +---infrastructure
-|                   +---dao
-|                       \---CustomerDAO
-|                       \---ProductDAO
-|                   +---repository
-|                       \---CustomerProductRepository
-|                   +---configuration
-|                       \---DatasourceConfig
-|                       \---SecurityConfig
-|                       \---WebServerConfig
++---src | +---main | +---java | +---com.your_company.project_name | +---application | +---customer |
+\---CustomerController | +---product | \---ProductController | +---customer_product | \---CustomerProductController |
+\---CustomerProductService # will usually use to aggregate logic from many different DAOs | +---domain | +---customer |
+\---Customer | \---CustomerValidator | +---product | \---Product | +---infrastructure | +---dao | \---CustomerDAO |
+\---ProductDAO | +---repository | \---CustomerProductRepository | +---configuration | \---DatasourceConfig |
+\---SecurityConfig | \---WebServerConfig
 ```
 
 ### [DAO vs Repository](https://stackoverflow.com/questions/8550124/what-is-the-difference-between-dao-and-repository-patterns)
+
 `DAO` is an abstraction of data persistence.
 `Repository` is an abstraction of a collection of objects.
 
@@ -51,9 +30,11 @@ It usually follows Domain Driven Design structure where you would have sth like 
 
 `Repository` could be implemented using `DAO`'s, but you wouldn't do the opposite.
 
-Also, a `Repository` is generally a narrower interface. It should be simply a collection of objects, with a Get(id), Find(ISpecification), Add(Entity).
+Also, a `Repository` is generally a narrower interface. It should be simply a collection of objects, with a Get(id),
+Find(ISpecification), Add(Entity).
 
-A method like Update is appropriate on a `DAO`, but not a `Repository` - when using a Repository, changes to entities would usually be tracked by separate UnitOfWork.
+A method like Update is appropriate on a `DAO`, but not a `Repository` - when using a Repository, changes to entities
+would usually be tracked by separate UnitOfWork.
 
 ## Configuration
 
@@ -773,6 +754,214 @@ public class Testing {
         return "customer-confirmation";
     }
 }
+```
+
+## AOP
+
+![aop](/imgs/aop.png)
+
+### Point cut expression
+
+This is the definition of a point cut expression
+
+`execution(modifiers-pattern? return-type-pattern declaring-type-pattern? method-name-pattern(param-pattern) throw-pattern?)`
+
+Patterns with ? is optional For a pattern with * (wildcard), it will match everything
+
+For example
+
+```java
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class MyLoggingDemo {
+    @Before("execution(public void addAccount()")
+    public void canBeAnyName() {
+        System.out.println("This will execute before any addAccount() method call");
+    }
+}
+```
+
+#### Parameter pattern wildcards
+
+- `()` - matches a method with no argument
+- `(*)` - matches a method with one argument of any type
+- `(..)` - matches a method with 0 or more arguments of any type
+
+### Point cut declaration
+
+To advoid repetition for point cut expression, you can declare it and use it as follow
+
+```java
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class MyLoggingDemo {
+    @Before("execution(* com.your_company.project.dao.*.*(..)")
+    public void forDAOPackage() {
+    }
+
+    @Before("forDAOPackage()")
+    public void logging() {
+        // do some logging
+    }
+
+    @Before("forDAOPackage()")
+    public void instrumentation() {
+        // do some instrumentations
+    }
+}
+```
+
+You can also combine them like this
+
+```java
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class MyLoggingDemo {
+    @Before("execution(* com.your_company.project.dao.*.*(..)")
+    public void expressionOne() {
+    }
+
+    @Before("execution(* com.your_company.project.dao.*.*(..)")
+    public void expressionTwo() {
+    }
+
+    @Before("expressionOne() && expressionTwo()")
+    public void methodOne() {
+        // do sth
+    }
+
+    @Before("expressionOne() || expressionTwo()")
+    public void methodOne() {
+        // do sth
+    }
+
+    @Before("expressionOne() && !expressionTwo()")
+    public void methodOne() {
+        // do sth
+    }
+}
+```
+
+### Order
+
+To control the order of aspect, use `@Order` annotation
+
+```java
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Order(-1)
+@Component
+public class MyLoggingDemo {
+}
+```
+
+With smaller number means high priority
+
+### Access and display method argument via JoinPoint
+
+```java
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class MyLoggingDemo {
+    @Before("execution(* com.your_company.project.dao.*.*(..)")
+    public void logMethodArgument(JoinPoint joinPoint) {
+        System.out.println(joinPoint.getArgs());
+    }
+}
+```
+
+### @AfterReturn
+
+```java
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class MyLoggingDemo {
+    @AfterReturning(pointcut = "execution(List<Customer> com.your_company.project.dao.*.*(..)", returning = "result")
+    public void logMethodArgument(JoinPoint joinPoint, List<Customer> result) {
+        System.out.println(result);
+
+        // you can also modify the result before returning to the caller
+    }
+}
+```
+
+### @AfterThrowing
+
+```java
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterThrowing;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class MyLoggingDemo {
+    @AfterThrowing(pointcut = "execution(List<Customer> com.your_company.project.dao.*.*(..)", throwing = "exc")
+    public void logMethodArgument(JoinPoint joinPoint, Throwable exc) {
+        System.out.println(exc);
+
+        // the exception will be bubbled up to the caller. If you want to stop it completely, use @Around
+    }
+}
+```
+
+### @After
+
+Very similar like `@Before`
+
+### @Around
+
+```java
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class MyLoggingDemo {
+    @Around("execution(* com.your_company.project.dao.*.*(..)")
+    public Object timeIt(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            return proceedingJoinPoint.proceed();
+        } catch (Exception ex) {
+            // you can also silent the error here and return new result
+            throw ex;
+        } finally {
+            long endTime = System.currentTimeMillis();
+
+            System.out.println("Execution time: " + endTime - startTime);
+        }
+    }
+}
+
 ```
 
 ## Spring security

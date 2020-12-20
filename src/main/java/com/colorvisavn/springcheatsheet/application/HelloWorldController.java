@@ -8,10 +8,10 @@ import java.util.Date;
 
 @Controller
 public class HelloWorldController {
-    @GetMapping("/hello_world")
-    public String sayHello(Model model) {
-        model.addAttribute("theDate", new Date());
+  @GetMapping("/hello_world")
+  public String sayHello(Model model) {
+    model.addAttribute("theDate", new Date());
 
-        return "hello_world";
-    }
+    return "hello_world";
+  }
 }

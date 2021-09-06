@@ -1247,7 +1247,7 @@ public class Course {
     @Column(name = "title")
     private String title;
 
-    @ManyToMany
+    @ManyToOne
     @JoinColumn(name = "instructor_id")
     private Instructor instructor;
 
